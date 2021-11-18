@@ -16,6 +16,10 @@ class DB {
         return self::$db;
     }
 
+    public static function quote_string($string) {
+        return self::connect()->quote($string);
+    }
+
     public static function query($q) {
         return self::connect()->query($q);
     }

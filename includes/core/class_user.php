@@ -58,10 +58,38 @@ class User {
 
     public static function owner_info() {
         // your code here ...
+        return self::user_info(['user_id' => Session::$user_id]);
     }
 
     public static function owner_update($data = []) {
         // your code here ...
+        try {
+            if (!isset($data['first_name'])
+                && !isset($data['last_name'])
+                && !isset($data['middle_name'])
+                && !isset($data['email'])
+                && !isset($data['phone'])
+            )
+                throw new Exception('empty request');
+            if (!$data['first_name'] || !$data['last_name'] || !$data['phone'])
+                throw new Exception('required fields not filled');
+            $phone = preg_replace('/[^0-9]/', '', $data['phone']);
+            if ($phone{0} != '7') throw new Exception('wrong phone code');
+            if (strlen($phone) != 11) throw new Exception('wrong phone length');
+            if (Session::$user_id > 0) {
+                $email = DB::quote_string(strtolower($data['email']));
+                $first_name = DB::quote_string($data['first_name']);
+                $middle_name = DB::quote_string($data['middle_name']);
+                $last_name = DB::quote_string($data['last_name']);
+                $q = "UPDATE users SET phone={$phone}, email={$email}, first_name={$first_name}, middle_name={$middle_name}, last_name={$last_name}, updated=".time()."
+                    WHERE user_id=".Session::$user_id;
+                DB::query($q);
+                Notification::push(Session::$user_id, 'Обновлена информация о пользователе', '');
+                return self::owner_info();
+            }
+        } catch (Throwable $e) {
+            response(error_response(1004, $e->getMessage()));
+        }
     }
 
 }
